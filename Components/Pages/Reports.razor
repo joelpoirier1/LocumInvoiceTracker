@@ -1,0 +1,103 @@
+@page "/reports"
+@rendermode InteractiveServer
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Reports</PageTitle>
+
+<h1>Excel Reports</h1>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Hospital</label>
+
+                <select class="form-select"
+                        @bind="hospitalId">
+                    @foreach (var hospital in hospitals)
+                    {
+                        <option value="@hospital.Id">
+                            @hospital.Name
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">From</label>
+
+                <InputDate class="form-control"
+                           @bind-Value="fromDate" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">To</label>
+
+                <InputDate class="form-control"
+                           @bind-Value="toDate" />
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-success w-100"
+                        disabled="@(hospitalId == 0)"
+                        @onclick="DownloadReport">
+                    Download
+                </button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Hospital> hospitals = [];
+
+    private int hospitalId;
+    private DateTime fromDate =
+        new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    private DateTime toDate = DateTime.Today;
+
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db =
+            await DbFactory.CreateDbContextAsync();
+
+        hospitals = await db.Hospitals
+            .AsNoTracking()
+            .OrderBy(hospital => hospital.Name)
+            .ToListAsync();
+
+        hospitalId = hospitals.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private void DownloadReport()
+    {
+        errorMessage = null;
+
+        if (toDate < fromDate)
+        {
+            errorMessage =
+                "The end date must be after the start date.";
+
+            return;
+        }
+
+        var url =
+            $"/api/reports/shifts.xlsx" +
+            $"?hospitalId={hospitalId}" +
+            $"&from={fromDate:yyyy-MM-dd}" +
+            $"&to={toDate:yyyy-MM-dd}";
+
+        Navigation.NavigateTo(url, forceLoad: true);
+    }
+}

@@ -1,0 +1,197 @@
+@page "/shifts"
+@rendermode InteractiveServer
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Shifts</PageTitle>
+
+<h1>Locum Shifts</h1>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Add Shift</h2>
+
+        <EditForm @key="newShift"
+                  Model="@newShift"
+                  OnValidSubmit="@AddShiftAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Hospital</label>
+
+                    <InputSelect class="form-select"
+                                 @bind-Value="newShift.HospitalId">
+                        <option value="0">Select a hospital</option>
+
+                        @foreach (var hospital in hospitals)
+                        {
+                            <option value="@hospital.Id">
+                                @hospital.Name
+                            </option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+
+                    <InputDate class="form-control"
+                               @bind-Value="newShift.Date" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Hours</label>
+
+                    <InputNumber class="form-control"
+                                 step="0.25"
+                                 @bind-Value="newShift.HoursWorked" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Hourly rate</label>
+
+                    <InputNumber class="form-control"
+                                 step="0.01"
+                                 @bind-Value="newShift.HourlyRate" />
+                </div>
+
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" type="submit">
+                        Add
+                    </button>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <p>Loading shifts...</p>
+}
+else if (shifts.Count == 0)
+{
+    <p>No shifts have been added.</p>
+}
+else
+{
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Hospital</th>
+                <th>Hours</th>
+                <th>Rate</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var shift in shifts)
+            {
+                <tr>
+                    <td>@shift.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@shift.Hospital?.Name</td>
+                    <td>@shift.HoursWorked</td>
+                    <td>@shift.HourlyRate.ToString("C")</td>
+                    <td>@shift.Total.ToString("C")</td>
+                    <td>@(shift.Paid ? "Yes" : "No")</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="() => DeleteShiftAsync(shift.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Hospital> hospitals = [];
+    private List<WorkShift> shifts = [];
+
+    private WorkShift newShift = CreateBlankShift();
+
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var db =
+            await DbFactory.CreateDbContextAsync();
+
+        hospitals = await db.Hospitals
+            .AsNoTracking()
+            .OrderBy(hospital => hospital.Name)
+            .ToListAsync();
+
+        newShift = CreateBlankShift(
+            hospitals.FirstOrDefault()?.Id ?? 0);
+
+        await LoadShiftsAsync();
+    }
+
+    private async Task LoadShiftsAsync()
+    {
+        isLoading = true;
+
+        await using var db =
+            await DbFactory.CreateDbContextAsync();
+
+        shifts = await db.WorkShifts
+            .AsNoTracking()
+            .Include(shift => shift.Hospital)
+            .OrderByDescending(shift => shift.Date)
+            .ToListAsync();
+
+        isLoading = false;
+    }
+
+    private async Task AddShiftAsync()
+    {
+        await using var db =
+            await DbFactory.CreateDbContextAsync();
+
+        db.WorkShifts.Add(newShift);
+        await db.SaveChangesAsync();
+
+        var selectedHospitalId = newShift.HospitalId;
+        newShift = CreateBlankShift(selectedHospitalId);
+
+        await LoadShiftsAsync();
+    }
+
+    private async Task DeleteShiftAsync(int shiftId)
+    {
+        await using var db =
+            await DbFactory.CreateDbContextAsync();
+
+        var shift = await db.WorkShifts.FindAsync(shiftId);
+
+        if (shift is null)
+        {
+            return;
+        }
+
+        db.WorkShifts.Remove(shift);
+        await db.SaveChangesAsync();
+
+        await LoadShiftsAsync();
+    }
+
+    private static WorkShift CreateBlankShift(
+        int hospitalId = 0)
+    {
+        return new WorkShift
+        {
+            HospitalId = hospitalId,
+            Date = DateTime.Today,
+            HoursWorked = 8,
+            HourlyRate = 65
+        };
+    }
+}
