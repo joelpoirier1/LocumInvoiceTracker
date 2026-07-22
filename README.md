@@ -8,13 +8,13 @@ The project demonstrates practical use of C#, Blazor, Entity Framework Core, SQL
 
 ### Shift Management
 
-![Shift management page](docs/screenshots/SS2.png)
+![Shift management page](docs/screenshots/SS2.PNG)
 
 ### Excel Reports
 
-![Excel report page](docs/screenshots/SS1.png)
+![Excel report page](docs/screenshots/SS1.PNG)
 
-![Generated report](docs/screenshots/SS3.png)
+![Generated report](docs/screenshots/SS3.PNG)
 
 ## Features
 
