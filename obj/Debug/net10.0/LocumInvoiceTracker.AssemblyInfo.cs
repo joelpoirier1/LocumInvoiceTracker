@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LocumInvoiceTracker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1ecb277e22573833a4888e7ff333ed08fdc3b8da")]
 [assembly: System.Reflection.AssemblyProductAttribute("LocumInvoiceTracker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LocumInvoiceTracker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
